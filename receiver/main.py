@@ -2,6 +2,8 @@ from network import LoRa
 import socket
 import machine
 import time
+import json
+import _urequest
 
 # initialise LoRa in LORA mode
 # Please pick the region that matches where you are using the device:
@@ -33,33 +35,41 @@ def receive_and_send_ack():
         # wait a random amount of time
         time.sleep(0.1)
 
+def print_img(image):
+
+    userdata = {"result": ''.join(image)}
+    res = _urequest.post('https://1fe130ad76e9.ngrok.io/resulting_image', headers = {'content-type': 'application/json'}, json=userdata)
+    res.close()
+
+
 def listen_for_image_parts(num_chunks, chunks_received=[]):
     image = []
     for i in range(num_chunks * 2 * 10):
         data = s.recv(300)
 
-        data = data.decode('utf-8')
-
-        chunk = []
+        chunk = ""
         if len(data) > 0:
             try:
-                number_of_chunk = int(data[:8], 2)
+                data = data.decode('utf-8')
+                number_of_chunk = int(data[:24], 2)
                 chunks_received.append(number_of_chunk)
 
-                for i in range(8, len(data), 24):
-                    r = int(data[i:i+8], 2)
-                    g = int(data[i+8:i+16], 2)
-                    b = int(data[i+16:i+24], 2)
-                    chunk.append([r, g, b])
+                chunk = data[24:]
             except:
                 print("Malformed")
 
-            if chunk not in image:
+            if number_of_chunk not in chunks_received:
                 image.append(chunk)
+                print(len(image))
+
+            if len(image) == num_chunks:
+                print_img(image)
+                return
 
             print(len(image))
 
-        time.sleep(0.5)
+        time.sleep(0.05)
+
 
     return list(set(chunks_received))
 
@@ -74,6 +84,7 @@ def retry_wrong_image_parts(num_chunks, chunks_received):
     else:
         s.send("OK")
 
-num_chunks = receive_and_send_ack()
-chunks_received = listen_for_image_parts(num_chunks)
-retry_wrong_image_parts(num_chunks, chunks_received)
+while True:
+    num_chunks = receive_and_send_ack()
+    chunks_received = listen_for_image_parts(num_chunks)
+    #retry_wrong_image_parts(num_chunks, chunks_received)
