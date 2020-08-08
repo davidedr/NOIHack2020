@@ -2,8 +2,6 @@ from network import LoRa
 import socket
 import machine
 import time
-import numpy as np
-from PIL import Image
 
 # initialise LoRa in LORA mode
 # Please pick the region that matches where you are using the device:
@@ -16,9 +14,6 @@ lora = LoRa(mode=LoRa.LORA, region=LoRa.EU868, sf=7)
 
 # create a raw LoRa socket
 s = socket.socket(socket.AF_LORA, socket.SOCK_RAW)
-
-image = []
-
 
 def receive_and_send_ack():
 
@@ -39,7 +34,7 @@ def receive_and_send_ack():
         time.sleep(0.1)
 
 
-def assembleImage():
+def assembleImage(image):
     # image is in the following format:
     '''
         [
@@ -49,18 +44,21 @@ def assembleImage():
             .
         ]
     '''
-    npa = np.asarray(image)
-    img = Image.fromarray(npa, 'RGB')
-    img.save('received.png')
+
+    print(image)
+    #with open("./result.txt", "w+") as f:
+    #    f.write(image)
 
 
 def listen_for_image_parts(num_chunks, chunks_received=[]):
+    image = [None for i in range(num_chunks)]
+
     for i in range(num_chunks * 2 * 10):
         data = s.recv(300)  # why 300 for choice of buf size?
         data = data.decode('utf-8')
-        print(data)
+        print(len(data))
         chunk = []
-        if len(data) > 0:
+        if len(data) > 0 and data != "(null)":
             try:
                 # number_of_chunk is the index of chunk
                 number_of_chunk = int(data[:8], 2)
@@ -76,11 +74,11 @@ def listen_for_image_parts(num_chunks, chunks_received=[]):
 
             print(chunk)
             if chunk not in image:
-                image.append(chunk)
+                image[number_of_chunk] = chunk
 
         if(len(image) == num_chunks):
             # received all the chunks to form the image
-            assembleImage()
+            assembleImage(image)
 
     return list(set(chunks_received))
 
