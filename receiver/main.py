@@ -33,13 +33,12 @@ def receive_and_send_ack():
         # wait a random amount of time
         time.sleep(0.1)
 
-def listen_for_image_parts(num_chunks, chunks_received=[]):
-    image = []
+def listen_for_image_parts(num_chunks, chunks_received=[], image=[]):
     for i in range(num_chunks * 2 * 10):
         data = s.recv(300)
 
         data = data.decode('utf-8')
-
+        print(data)
         chunk = []
         if len(data) > 0:
             try:
@@ -54,16 +53,15 @@ def listen_for_image_parts(num_chunks, chunks_received=[]):
             except:
                 print("Malformed")
 
+            print(chunk)
             if chunk not in image:
                 image.append(chunk)
 
             print(len(image))
 
-        time.sleep(0.5)
-
     return list(set(chunks_received))
 
-def retry_wrong_image_parts(num_chunks, chunks_received):
+def retry_wrong_image_parts(num_chunks, chunks_received, image):
     wrong_parts = [i for i in range(len(num_chunks)) if i not in chunks_received]
     print(wrong_parts)
 
@@ -75,5 +73,5 @@ def retry_wrong_image_parts(num_chunks, chunks_received):
         s.send("OK")
 
 num_chunks = receive_and_send_ack()
-chunks_received = listen_for_image_parts(num_chunks)
+chunks_received, image = listen_for_image_parts(num_chunks)
 retry_wrong_image_parts(num_chunks, chunks_received)
