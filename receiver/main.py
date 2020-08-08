@@ -52,7 +52,6 @@ def listen_for_image_parts(num_chunks, chunks_received=[]):
             try:
                 data = data.decode('utf-8')
                 number_of_chunk = int(data[:24], 2)
-                chunks_received.append(number_of_chunk)
 
                 chunk = data[24:]
             except:
@@ -60,6 +59,7 @@ def listen_for_image_parts(num_chunks, chunks_received=[]):
 
             if number_of_chunk not in chunks_received:
                 image.append(chunk)
+                chunks_received.append(number_of_chunk)
                 print(len(image))
 
             if len(image) == num_chunks:
@@ -87,4 +87,4 @@ def retry_wrong_image_parts(num_chunks, chunks_received):
 while True:
     num_chunks = receive_and_send_ack()
     chunks_received = listen_for_image_parts(num_chunks)
-    #retry_wrong_image_parts(num_chunks, chunks_received)
+    retry_wrong_image_parts(num_chunks, chunks_received)
