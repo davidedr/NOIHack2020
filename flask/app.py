@@ -34,6 +34,19 @@ def upload():
 
     #return Response(response="test", status=200, mimetype="application/json")
 
+@app.route("/resulting_image", methods=['POST'])
+def resulting_image():
+    data = request.json['result']
+
+    with open("result.txt", "w+") as f:
+        f.write(data)
+
+@app.route("/serve", methods=['GET'])
+def serve():
+    with open("result.txt", "r") as f:
+       data = f.read()
+
+    return {"result": data}
 
 if __name__ == "__main__":
     app.run(debug=True)
